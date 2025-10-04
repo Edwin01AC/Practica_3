@@ -13,6 +13,9 @@ string ConvertirAbinario(char Caracter);
 string ConvertirATexto(string binario);
 string TextoABinario(string texto);
 string BinarioATexto(string binario);
+bool VerificarClaveAdmin(string claveIngresada, int Semilla, int metodo);
+void MenuAdministrador();
+bool VerificarUsuario(string cedula, string clave, string& saldo);
 
 int main()
 {
@@ -28,9 +31,26 @@ int main()
         cin >> opcion;
 
         switch (opcion) {
-        case 1:
+        case 1:{
+            string clave;
+            int semilla;
+            int metodo;
 
+            cout << "Ingrese la clave de administrador: "; //Administrador123
+            cin >> clave;
+            cout << "Ingrese la semilla: "; //5
+            cin >> semilla;
+            cout << "Ingrese el metodo usado: "; //2
+            cin >> metodo;
+
+            if (VerificarClaveAdmin(clave, semilla, metodo)) {
+                cout << "Acceso concedido como administrador.\n";
+                MenuAdministrador();
+            } else {
+                cout << "Clave de administrador incorrecta.\n";
+            }
             break;
+        }
         case 2:
 
             break;
@@ -38,9 +58,10 @@ int main()
 
             break;
         case 4:
-
+            cout << "Saliendo del sistema...\n";
             break;
         default:
+            cout << "Opcion no valida.\n";
             break;
         }
 
@@ -74,6 +95,78 @@ string ConvertirATexto(string binario) {
         texto += caracter;
     }
     return texto;
+}
+
+void MenuAdministrador() {
+    int opcion;
+    do {
+        cout << "\n===== MENU ADMINISTRADOR =====\n";
+        cout << "1. Registrar Usuario\n";
+        cout << "2. Volver al Menu Principal\n";
+        cout << "Seleccione una opcion: ";
+        cin >> opcion;
+
+        if (opcion == 1) {
+            RegistrarUsuario();
+        } else if (opcion != 2) {
+            cout << "Opcion invalida. Intente de nuevo.\n";
+        }
+    } while (opcion != 2);
+}
+
+bool VerificarUsuario(string cedula, string clave, string& saldo) {
+    ifstream archivo("usuarios.txt");
+    if (!archivo.is_open()) {
+        cout << "Error al abrir archivo de usuarios.\n";
+        return false;
+    }
+
+    string cedulaCod = Codificar2(DividirEnGrupos(TextoABinario(cedula), 4));
+    string claveCod = Codificar2(DividirEnGrupos(TextoABinario(clave), 4));
+    string comaCod = Codificar2(DividirEnGrupos(TextoABinario(","), 4));
+    string linea;
+
+    while (getline(archivo, linea)) {
+        size_t pos1 = linea.find(comaCod);
+        if (pos1 == string::npos) continue;
+
+        size_t pos2 = linea.find(comaCod, pos1 + comaCod.length());
+        if (pos2 == string::npos) continue;
+
+        if (linea.substr(0, pos1) == cedulaCod &&
+            linea.substr(pos1 + comaCod.length(), pos2 - pos1 - comaCod.length()) == claveCod) {
+
+            string saldoCod = linea.substr(pos2 + comaCod.length());
+            saldo = BinarioATexto(Decodificar2(DividirEnGrupos(saldoCod, 4)));
+            archivo.close();
+            return true;
+        }
+    }
+
+    archivo.close();
+    return false;
+}
+
+bool VerificarClaveAdmin(string claveIngresada, int Semilla, int metodo) {
+    string claveCodificada = "", gruposDecodificado;
+    char caracter;
+
+    ifstream archivoAdmin("sudo.txt");
+    if (archivoAdmin.is_open()) {
+        while (archivoAdmin.get(caracter)) {
+            claveCodificada += caracter;
+        }
+        archivoAdmin.close();
+
+        gruposDecodificado = DividirEnGrupos(claveCodificada, Semilla);
+        string binario = (metodo == 1) ? Decodificar1(gruposDecodificado) : Decodificar2(gruposDecodificado);
+        string decodificado = ConvertirATexto(binario);
+
+        return decodificado == claveIngresada;
+    } else {
+        cout << "Error al abrir archivo de claves.\n";
+        return false;
+    }
 }
 
 string Codificar1(string Grupos) {
