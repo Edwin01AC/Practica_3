@@ -5,6 +5,7 @@
 
 using namespace std;
 
+string DividirEnGrupos(string binario, int n);
 string Codificar1(string Grupos);
 string Decodificar1(string Grupos);
 string Codificar2(string Grupos);
@@ -18,6 +19,7 @@ void MenuAdministrador();
 bool VerificarUsuario(string cedula, string clave, string& saldo);
 void MenuUsuario();
 void RegistrarUsuario();
+void ActualizarSaldo(string cedula, string nuevoSaldo);
 
 int main() {
     int opcion;
@@ -129,6 +131,25 @@ int main() {
     } while (opcion != 4);
 
     return 0;
+}
+
+string DividirEnGrupos(string binario, int n) {
+    string Grupos;
+    string Grupo;
+
+    for (int i = 0; i < binario.length(); i++) {
+        Grupo += binario[i];
+        if ((i + 1) % n == 0) {
+            Grupos += Grupo + " ";
+            Grupo.clear();
+        }
+    }
+
+    if (!Grupo.empty()) {
+        Grupos += Grupo;
+    }
+
+    return Grupos;
 }
 
 string TextoABinario(string texto) {
@@ -309,6 +330,45 @@ void RegistrarUsuario() {
     }
 }
 
+void ActualizarSaldo(string cedula, string nuevoSaldo) {
+    ifstream entrada("usuarios.txt");
+    if (!entrada.is_open()) {
+        cout << "Error al abrir archivo de usuarios.\n";
+        return;
+    }
+
+    string cedulaCod = Codificar2(DividirEnGrupos(TextoABinario(cedula), 4));
+    string saldoCod = Codificar2(DividirEnGrupos(TextoABinario(nuevoSaldo), 4));
+    string comaCod = Codificar2(DividirEnGrupos(TextoABinario(","), 4));
+    string contenido, linea;
+
+    while (getline(entrada, linea)) {
+        size_t pos = linea.find(comaCod);
+        if (pos == string::npos) {
+            contenido += linea + "\n";
+            continue;
+        }
+
+        if (linea.substr(0, pos) == cedulaCod) {
+            size_t pos2 = linea.find(comaCod, pos + comaCod.length());
+            if (pos2 != string::npos) {
+                contenido += linea.substr(0, pos2 + comaCod.length()) + saldoCod + "\n";
+                continue;
+            }
+        }
+        contenido += linea + "\n";
+    }
+
+    entrada.close();
+
+    ofstream salida("usuarios.txt");
+    if (salida.is_open()) {
+        salida << contenido;
+        salida.close();
+    } else {
+        cout << "Error al guardar cambios.\n";
+    }
+}
 
 string Codificar1(string Grupos) {
     string Codificado;
